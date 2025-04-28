@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from services import user_service
-from schemas import schemas,apiResponse
+from schemas import schemas,apiResponse,loginRequest
 from datetime import datetime
+from security import create_access_token
+from auth import get_current_user
 
 router = APIRouter()
 
@@ -25,20 +27,20 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
         timeStamp=datetime.now()
     )
 
-@router.get("/{id}", response_model=apiResponse.APIResponseBase)
-def get_user_by_id(id: int, db: Session = Depends(get_db)):
-    try:
-        user = user_service.get_users_by_id(db, id)
+# @router.get("/{id}", response_model=apiResponse.APIResponseBase)
+# def get_user_by_id(id: int, db: Session = Depends(get_db)):
+#     try:
+#         user = user_service.get_users_by_id(db, id)
 
-        user_response = schemas.UserResponse.from_orm(user)
+#         user_response = schemas.UserResponse.from_orm(user)
 
-        return apiResponse.APIResponseBase(
-        status="success",
-        data=user_response,
-        timeStamp=datetime.now()
-    )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+#         return apiResponse.APIResponseBase(
+#         status="success",
+#         data=user_response,
+#         timeStamp=datetime.now()
+#     )
+#     except ValueError as e:
+#         raise HTTPException(status_code=400, detail=str(e))
     
 
 @router.post("/", response_model=schemas.UserResponse)
@@ -76,3 +78,16 @@ def transfer_money_endpoint(
     db: Session = Depends(get_db)
 ):
     return user_service.transfer_money(db, from_account_id, to_account_id, amount)
+
+@router.post("/login")
+def login(request: loginRequest.LoginRequest):
+    # ตรวจสอบ username/password (ตัวอย่างง่ายๆ)
+    if request.username == "admin" and request.password == "1234":
+        # สร้าง JWT Token
+        token = create_access_token({"sub": request.username, "role": "admin"})
+        return {"access_token": token, "token_type": "bearer"}
+    raise HTTPException(status_code=401, detail="Invalid credentials")
+
+@router.get("/private")
+def private_api(current_user: dict = Depends(get_current_user)):
+    return {"message": f"Hello {current_user['sub']}, this is a private API"}
