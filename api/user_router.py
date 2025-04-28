@@ -68,3 +68,11 @@ def delete_user(id: int, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.post("/transfer")
+def transfer_money_endpoint(
+    from_account_id: int,
+    to_account_id: int,
+    amount: float,
+    db: Session = Depends(get_db)
+):
+    return user_service.transfer_money(db, from_account_id, to_account_id, amount)

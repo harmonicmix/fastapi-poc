@@ -3,6 +3,7 @@ from pydantic import BaseModel
 class UserBase(BaseModel):
     name: str
     email: str
+    balance: float
     class Config:
         from_attributes = True
         
